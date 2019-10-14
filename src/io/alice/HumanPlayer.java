@@ -1,14 +1,16 @@
 package io.alice;
+
 import java.util.Scanner;
 
-public class HumanPlayer extends APlayer{
+public class HumanPlayer extends APlayer {
 
     /**
      * Constructor for objects of class HumanPlayer
+     *
      * @params game the tic-tac-toe game that is to be played
      * @params the character symbol to be used to represent this player's moves
-     * */
-    HumanPlayer(Game game, char symbol){
+     */
+    HumanPlayer(Game game, char symbol) {
         super(game, symbol);
     }
 
@@ -20,8 +22,9 @@ public class HumanPlayer extends APlayer{
      * already occupied, an appropriate error message is shown and the user is asked for another position.
      * If the user writes quit (regardless of case), the method returns null, signifying that the program should
      * terminate.
+     *
      * @return the move the user chose or null if the user wants to quit
-     * */
+     */
     public Move pickMove() {
         int boardSize = game.getBoardSize();
         Move move = new Move(boardSize + 1, boardSize + 1);
@@ -38,27 +41,28 @@ public class HumanPlayer extends APlayer{
 
             if (humanMove.length() != 2) {
                 System.out.println("Invalid Move: please specify two characters, one for the row and one for the column");
-            } else{
+            } else {
                 int row = humanMove.charAt(0) - 65;
                 int col = Character.digit(humanMove.charAt(1), 10) - 1;
                 move.row = row;
                 move.col = col;
                 if (this.game.isValidMove(move) == 'V') {
                     break;
-                }switch(this.game.isValidMove(move)) {
-                        case 'R':
-                            char lastChar = (char)(boardSize + 64); // the character of the last row in the board
-                            System.out.println("Invalid move: You must select a row between A and " + lastChar);
-                            break;
-                        case 'C':
-                            System.out.println("Invalid move: You must select a column between 1 and " + boardSize);
-                            break;
-                        case 'O':
-                            System.out.println("Invalid move: position already taken");
-                            break;
-                    }
+                }
+                switch (this.game.isValidMove(move)) {
+                    case 'R':
+                        char lastChar = (char) (boardSize + 64); // the character of the last row in the board
+                        System.out.println("Invalid move: You must select a row between A and " + lastChar);
+                        break;
+                    case 'C':
+                        System.out.println("Invalid move: You must select a column between 1 and " + boardSize);
+                        break;
+                    case 'O':
+                        System.out.println("Invalid move: position already taken");
+                        break;
                 }
             }
+        }
         return move;
     }
 }

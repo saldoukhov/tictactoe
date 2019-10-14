@@ -1,31 +1,32 @@
 package io.alice;
-import io.alice.Move;
-import io.alice.APlayer;
-import java.io.IOException;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Game class which represents the Tic-Tac-Toe game
+ *
  * @author Alice Aldoukhov
  * @version v1
- * */
+ */
 public class Game {
-    /** represents the game board as matrix of player symbols */
+    /**
+     * represents the game board as matrix of player symbols
+     */
     private char[][] board;
-    /** represents board size, which will be a boardSize x boardSize matrix */
-    final int boardSize;
-    /** represents the game board as matrix of player symbols */
+    /**
+     * represents board size, which will be a boardSize x boardSize matrix
+     */
+    private final int boardSize;
+    /**
+     * represents the game board as matrix of player symbols
+     */
     private APlayer[] players;
-    /** the character to be used to represent a blank space on the board (' ') */
-    private char SYMBOL_BLANK = ' ';
-    /** the character to be used to represent a cpu move on the board ('O') */
-    private char SYMBOL_CPU = 'O';
-    /** the character to be used to represent a human move on the board ('X') */
-    private char SYMBOL_HUMAN = 'X';
 
     /**
      * Constructor for objects of class Game
      */
-    public Game(int boardSize) {
+    private Game(int boardSize) {
         this.boardSize = boardSize;
         this.board = new char[boardSize][boardSize];
         this.players = new APlayer[2];
@@ -36,14 +37,14 @@ public class Game {
     /**
      * Returns the game board size
      */
-    public int getBoardSize() {
+    int getBoardSize() {
         return this.boardSize;
     }
 
     /**
      * Resets the game state so we can play again.
      */
-    protected void resetGame() {
+    private void resetGame() {
         for (int row = 0; row < this.boardSize; row++) {
             for (int col = 0; col < this.boardSize; col++) {
                 this.board[row][col] = ' ';
@@ -58,7 +59,7 @@ public class Game {
      * @param move the move to be validated
      * @return 'V; the move is valid, 'R' invalid row, 'C" invalid column, 'O' if position is occupied
      */
-    public char isValidMove(Move move) {
+    char isValidMove(Move move) {
         char isVal = 'V';
         if (move.row >= 0 && move.row < this.boardSize) {
             if (move.col >= 0 && move.col < this.boardSize) {
@@ -79,15 +80,59 @@ public class Game {
      *
      * @param move   the move to be executed
      * @param symbol the symbol of the player who is making the move
-     * @return true if the move was successfully executed
      */
-    protected boolean executeMove(Move move, char symbol) {
-        boolean isMoveValid = false;
+    private void executeMove(Move move, char symbol) {
         if (this.isValidMove(move) == 'V') {
             this.board[move.row][move.col] = symbol;
-            isMoveValid = true;
         }
-        return isMoveValid;
+    }
+
+    /**
+     * @param line row, column or diagonal to check
+     * @return ' ' if incomplete, ? if mix, symbol if complete with single symbol
+     */
+    private static char getLineStatus(char[] line) {
+        char result = line[0];
+        if (result == ' ')
+            return ' ';
+        for (int i = 1; i < line.length; i++) {
+            char current = line[i];
+            if (current == ' ')
+                return ' ';
+            if (current != result) {
+                result = '?';
+            }
+        }
+        return result;
+    }
+
+    private static void countLine(char lineResult, Map<Character, Integer> lineCounts) {
+        Integer existingCount = lineCounts.getOrDefault(lineResult, 0);
+        lineCounts.put(lineResult, existingCount + 1);
+    }
+
+    private char[] getColumn(int column) {
+        char[] line = new char[this.boardSize];
+        for (int row = 0; row < this.boardSize; row++) {
+            line[row] = this.board[row][column];
+        }
+        return line;
+    }
+
+    private char[] getMajorDiag() {
+        char[] line = new char[this.boardSize];
+        for (int row = 0; row < this.boardSize; row++) {
+            line[row] = this.board[row][row];
+        }
+        return line;
+    }
+
+    private char[] getSubDiag() {
+        char[] line = new char[this.boardSize];
+        for (int row = 0; row < this.boardSize; row++) {
+            line[row] = this.board[row][this.boardSize - row - 1];
+        }
+        return line;
     }
 
     /**
@@ -98,99 +143,44 @@ public class Game {
      * @return A character indicating the game state: '?' if the game isn't over yet, 'T' if the game is over and tied,
      * or, if a player won, the winning player's symbol ('X' or 'O').
      */
-    public char getGameStatus() {
-        char gameRes = '?';
-        boolean isGameOver = false;
-        boolean isBoardFull = true;
-        boolean isRowDone = false;
-        boolean isColDone = false;
-        boolean isDiagDone = false;
-        char symb; // the first symbol in the row/column/diagonal against which the others are compared
+    private char getGameStatus() {
         int row;
         int col;
 
-        for(row = 0; row < this.boardSize; row++) {
-            symb = this.board[row][0];
-            if (this.board[row][0] != ' ')
-                isRowDone = true;
-            for (col = 0; col < this.boardSize; col++) {
-                if (this.board[row][col] == ' ')
-                    isBoardFull = false;
-                if (this.board[row][col] != symb)
-                    isRowDone = false;
-            }
-            if (isRowDone && !isGameOver) {
-                isGameOver = true;
-                gameRes = symb;
-            }
+        Map<Character, Integer> lineCounts = new HashMap<>();
+
+        for (row = 0; row < this.boardSize; row++) {
+            countLine(getLineStatus(this.board[row]), lineCounts);
         }
 
-        for(col = 0; col < this.boardSize; col ++) {
-            symb = this.board[0][col];
-            if (this.board[0][col] != ' ')
-                isColDone = true;
-            for (row = 0; row < this.boardSize; row++) {
-                if (this.board[row][col] == ' ')
-                    isBoardFull = false;
-                if (this.board[row][col] != symb)
-                    isColDone = false;
-            }
-            if (isColDone && !isGameOver) {
-                isGameOver = true;
-                gameRes = symb;
-            }
+        for (col = 0; col < this.boardSize; col++) {
+            countLine(getLineStatus(getColumn(col)), lineCounts);
         }
 
-        // Checks if the top left to bottom right diagonal has been completed
-        symb = this.board[0][0];
-        col = 1;
-        if(symb != ' ' && !isGameOver)
-            isDiagDone = true;
+        countLine(getLineStatus(getMajorDiag()), lineCounts);
+        countLine(getLineStatus(getSubDiag()), lineCounts);
 
-        for(row = 1; row < boardSize && col < this.boardSize; row++){
-            if (this.board[row][col] != symb) {
-                isDiagDone = false;
-                break;
-            }
-            col ++;
-            }
-
-        if(isDiagDone){
-            isGameOver = true;
-            gameRes = symb;
-        }
-
-        // Checks if the bottom right to top left diagonal has been completed
-        symb = this.board[boardSize - 1][0];
-        col = 0;
-        if(symb != ' ' && !isGameOver)
-            isDiagDone = true;
-
-        for(row = boardSize - 1; row >= 0 && col < this.boardSize; row--){
-            if (this.board[row][col] != symb) {
-                isDiagDone = false;
-            }
-            col ++;
-        }
-
-        if(isDiagDone){
-            isGameOver = true;
-            gameRes = symb;
-        }
-        // If the board is full and none of the previous winning conditions have been fulfilled, returns 'T' for tie.
-        if (isBoardFull && !isGameOver){
-            gameRes = 'T';
-        }
-
-        return gameRes;
+        boolean player1Won = lineCounts.getOrDefault(players[0].symbol, 0) > 0;
+        boolean player2Won = lineCounts.getOrDefault(players[1].symbol, 0) > 0;
+        boolean boardIsFull = lineCounts.getOrDefault(' ', 0) == 0;
+        if (player1Won && player2Won) // both players completed lines, it is a tie
+            return 'T';
+        if (player1Won)
+            return players[0].symbol;
+        if (player2Won)
+            return players[1].symbol;
+        if (boardIsFull)
+            return 'T';
+        return '?';
     }
 
 
     /**
      * Creates a textual representation of the game board
+     *
      * @return A String representing the game board in the aforementioned format.
-     * */
-    public String toString () {
+     */
+    public String toString() {
         String bs = "    ";         // bs stands for board string
         for (int col = 0; col <= (this.boardSize - 1); col++) {
             bs = bs + (col + 1) + " ";
@@ -225,15 +215,16 @@ public class Game {
 
     /**
      * Plays a single game of Tic-tac-toe by having players pick moves in turn.
-     * The first player to play is choosen uniformly at random.
+     * The first player to play is chosen uniformly at random.
+     *
      * @return A character representing the game's result: 'H' if the human player won, 'C' if the CPU won, '
      * T' if there was a tie, or 'Q' if the human quit the game.
-     * */
-    public char playSingleGame () {
+     */
+    private char playSingleGame() {
         this.resetGame();
         System.out.println("\n---------- NEW GAME ----------\n");
         System.out.println(this);
-        int turn = (int)(2 * Math.random());
+        int turn = (int) (2 * Math.random());
         char res;
         do {
             Move move = this.players[turn].pickMove();
@@ -242,29 +233,30 @@ public class Game {
             }
             this.executeMove(move, this.players[turn].getSymbol());
             System.out.println(this);
-            if (turn == 0){  // changes turns from one player to the other
+            if (turn == 0) {  // changes turns from one player to the other
                 turn = 1;
             } else turn = 0;
             res = this.getGameStatus();
-            switch(res) {
+            switch (res) {
                 case 'O':
                     res = 'C';
                     break;
                 case 'X':
                     res = 'H';
             }
-        } while(res == '?');
+        } while (res == '?');
         return res;
     }
 
     /**
      * Runs consecutive Tic-tac-toe games until the user gets tired and quits.
      * When the user quits, the win-loss-tie statistics are printed.
+     *
      * @params args The first argument represents the desired game board size, which should be an integer in [1,9].
      * If the provided board size does not comply with these rules or if no argument is provided,
      * a default game board size of 3 x 3 will be used.
-     * */
-    public static void main (String[]args) {
+     */
+    public static void main(String[] args) {
         System.out.println("Tic-Tac-Toe by Alice Aldoukhov\n");
         int boardSize = 3;
         if (args.length > 0) {
@@ -280,7 +272,8 @@ public class Game {
         }
 
         Game newGame = new Game(boardSize);
-        GameStats gStats = new GameStats() {};
+        GameStats gStats = new GameStats() {
+        };
         boolean keepPlaying = true;
         do {
             char res = newGame.playSingleGame();
